@@ -1,0 +1,14 @@
+package-lock.json
+node_modules/
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente (NUNCA commitar!)
+.env
+.env.local
+.env.production
