@@ -4,11 +4,9 @@ const app = express();
 app.use(express.json());
 
 // Conexão com o banco de dados
-let db = null;
+const db = require('./dataBase');
 
-if (process.env.RENDER !== "true") {
-    db = require('./dataBase');
-}//importação do módulo de autenticação (função)   
+//importação do módulo de autenticação (função)   
 const { autenticar, verificarToken } = require('./autenticacao_JWT');
 autenticar(app, db);
 
@@ -36,7 +34,7 @@ let produtos = [
 ];
 
 let proximoId = 21;
-n
+
 // =====================
 // ROTA INICIAL
 // =====================

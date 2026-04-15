@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS usuarios (
 db.exec(createUsuarios);
 console.log('✅ Tabelas criadas com relacionamento!');
 
-module.exports = db;
 // Inserir categorias
 const categorias = [
        { id: 1, nome: "História"},
