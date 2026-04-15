@@ -5,10 +5,9 @@ app.use(express.json());
 
 // Conexão com o banco de dados
 const db = require('./dataBase');
-
 //importação do módulo de autenticação (função)   
-const autenticacao = require('./autenticacao_JWT');
-autenticacao(app, db);
+const { autenticar, verificarToken } = require('./autenticacao_JWT');
+autenticar(app, db);
 
 let produtos = [
     { id: 1, nome: "Anne Frank", preco: 50, categoria: "História", estoque: 30 },
@@ -120,7 +119,7 @@ app.get('/api/produtos/:id', (req, res) => {
 // =====================
 // POST
 // =====================
-app.post('/api/produtos', (req, res) => {
+app.post('/api/produtos', verificarToken, (req,res) => {
     const { nome, preco, categoria, estoque } = req.body;
 
     if (!nome || !preco || !categoria) {
@@ -145,7 +144,7 @@ app.post('/api/produtos', (req, res) => {
 // =====================
 // PUT
 // =====================
-app.put('/api/produtos/:id', (req, res) => {
+app.put('/api/produtos/:id', verificarToken, (req,res) =>  {
     const produto = produtos.find(p => p.id === Number(req.params.id));
 
     if (!produto) {
@@ -165,7 +164,7 @@ app.put('/api/produtos/:id', (req, res) => {
 // =====================
 // DELETE
 // =====================
-app.delete('/api/produtos/:id', (req, res) => {
+app.delete('/api/produtos/:id', verificarToken, (req,res) => {
     const index = produtos.findIndex(p => p.id === Number(req.params.id));
 
     if (index === -1) {

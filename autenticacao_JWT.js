@@ -107,5 +107,28 @@ app.post('/auth/login', async (req, res) => {
         console.error(error);
         res.status(500).json({ erro: 'Erro no login' });
     }
+    function verificarToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+
+    if (!authHeader) {
+        return res.status(401).json({ erro: 'Token não enviado' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ erro: 'Token inválido' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (erro, usuario) => {
+        if (erro) {
+            return res.status(403).json({ erro: 'Token inválido ou expirado' });
+        }
+
+        req.usuario = usuario;
+        next();
+    });
+}
+module.exports = { autenticar, verificarToken };
 
 });};
