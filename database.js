@@ -1,5 +1,9 @@
+const path = require('path');
 const Database = require('better-sqlite3');
-const db = new Database('loja.db');
+
+// Isso garante que o caminho seja absoluto, evitando erros de diretório no servidor
+const dbPath = path.resolve(__dirname, 'loja.db');
+const db = new Database(dbPath);
 
 // Habilitar Foreign Keys (IMPORTANTE no SQLite!)
 db.exec('PRAGMA foreign_keys = ON');
