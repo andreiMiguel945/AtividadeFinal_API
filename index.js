@@ -4,8 +4,11 @@ const app = express();
 app.use(express.json());
 
 // Conexão com o banco de dados
-const db = require('./dataBase');
-//importação do módulo de autenticação (função)   
+let db = null;
+
+if (process.env.RENDER !== "true") {
+    db = require('./dataBase');
+}//importação do módulo de autenticação (função)   
 const { autenticar, verificarToken } = require('./autenticacao_JWT');
 autenticar(app, db);
 
@@ -179,6 +182,8 @@ app.delete('/api/produtos/:id', verificarToken, (req,res) => {
 // =====================
 // SERVIDOR
 // =====================
-app.listen(3000, () => {
-    console.log('🚀 API rodando em http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
