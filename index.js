@@ -4,8 +4,9 @@ const app = express();
 app.use(express.json());
 
 // Conexão com o banco de dados
-const db = require('./dataBase');
-
+if (process.env.NODE_ENV !== 'production') {
+    const db = require('./dataBase');
+}
 //importação do módulo de autenticação (função)   
 const { autenticar, verificarToken } = require('./autenticacao_JWT');
 autenticar(app, db);
