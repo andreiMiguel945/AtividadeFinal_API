@@ -177,6 +177,26 @@ app.delete('/api/produtos/:id', (req, res) => {
     res.status(204).send();
 });
 
+// Rotas de produtos
+
+// src/routes/produtos.js
+const express = require('express');
+const router = express.Router();
+const produtosController = require('../controllers/produtosController');
+const autenticar = require('../middleware/auth');
+
+router.get('/', produtosController.listar);
+router.get('/:id', produtosController.buscarPorId);
+router.post('/', autenticar, produtosController.criar);
+router.put('/:id', autenticar, produtosController.atualizar);
+router.delete('/:id', autenticar, produtosController.deletar);
+
+module.exports = router;
+
+// src/index.js
+const produtosRoutes = require('./routes/produtos');
+app.use('/api/produtos', produtosRoutes);
+
 // =====================
 // SERVIDOR
 // =====================
