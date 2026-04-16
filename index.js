@@ -4,185 +4,81 @@ const app = express();
 app.use(express.json());
 
 // Conexão com o banco de dados
-if (process.env.NODE_ENV !== 'production') {
-    const db = require('./dataBase');
-}
+const db = require('./dataBase');
+
 //importação do módulo de autenticação (função)   
 const { autenticar, verificarToken } = require('./autenticacao_JWT');
 autenticar(app, db);
 
-let produtos = [
-    { id: 1, nome: "Anne Frank", preco: 50, categoria: "História", estoque: 30 },
-    { id: 2, nome: "Entendendo Algoritmos", preco: 39, categoria: "Informática", estoque: 50 },
-    { id: 3, nome: "Diário de uma banana", preco: 45, categoria: "Comédia", estoque: 45 },
-    { id: 4, nome: "Clean Code", preco: 60, categoria: "Programação", estoque: 25 },
-    { id: 5, nome: "Dom Casmurro", preco: 35, categoria: "Literatura", estoque: 40 },
-    { id: 6, nome: "O Hobbit", preco: 55, categoria: "Fantasia", estoque: 20 },
-    { id: 7, nome: "1984", preco: 48, categoria: "Ficção", estoque: 32 },
-    { id: 8, nome: "A Revolução dos Bichos", preco: 30, categoria: "Ficção", estoque: 28 },
-    { id: 9, nome: "JavaScript: O Guia Definitivo", preco: 70, categoria: "Programação", estoque: 15 },
-    { id: 10, nome: "Pai Rico, Pai Pobre", preco: 42, categoria: "Finanças", estoque: 38 },
-    { id: 11, nome: "Harry Potter", preco: 52, categoria: "Fantasia", estoque: 18 },
-    { id: 12, nome: "O Senhor dos Anéis", preco: 80, categoria: "Fantasia", estoque: 12 },
-    { id: 13, nome: "Percy Jackson", preco: 44, categoria: "Fantasia", estoque: 20 },
-    { id: 14, nome: "Código Limpo", preco: 58, categoria: "Programação", estoque: 16 },
-    { id: 15, nome: "Algoritmos", preco: 65, categoria: "Informática", estoque: 10 },
-    { id: 16, nome: "Sherlock Holmes", preco: 37, categoria: "Mistério", estoque: 24 },
-    { id: 17, nome: "A Culpa é das Estrelas", preco: 40, categoria: "Romance", estoque: 22 },
-    { id: 18, nome: "It: A Coisa", preco: 62, categoria: "Terror", estoque: 8 },
-    { id: 19, nome: "Drácula", preco: 33, categoria: "Terror", estoque: 14 },
-    { id: 20, nome: "Mindset", preco: 47, categoria: "Desenvolvimento", estoque: 19 }
-];
-
-let proximoId = 21;
-
 // =====================
 // ROTA INICIAL
 // =====================
-app.get('/', (req, res) => {
-    res.json(produtos);
+// GET /api/categorias - Listar todas
+app.get('/api/categorias', (req, res) => {
+    const categorias = db.prepare('SELECT * FROM categorias').all();
+    res.json(categorias);
 });
 
-// =====================
-// GET - LISTAR PRODUTOS
-// =====================
-app.get('/api/produtos', (req, res) => {
-    const {
-        categoria,
-        preco_max,
-        preco_min,
-        ordem,
-        direcao,
-        pagina = 1,
-        limite = 10
-    } = req.query;
-
-    let resultado = [...produtos];
-
-    // filtros
-    if (categoria) {
-        resultado = resultado.filter(p => p.categoria === categoria);
+// GET /api/categorias/:id - Buscar por ID (com produtos!)
+app.get('/api/categorias/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    // Buscar categoria
+    const categoria = db.prepare(
+        'SELECT * FROM categorias WHERE id = ?'
+    ).get(id);
+    
+    if (!categoria) {
+        return res.status(404).json({ erro: 'Categoria não encontrada' });
     }
-
-    if (preco_max) {
-        resultado = resultado.filter(p => p.preco <= Number(preco_max));
-    }
-
-    if (preco_min) {
-        resultado = resultado.filter(p => p.preco >= Number(preco_min));
-    }
-
-    // ordenação
-    if (ordem === "preco") {
-        resultado.sort((a, b) =>
-            direcao === "desc" ? b.preco - a.preco : a.preco - b.preco
-        );
-    }
-
-    if (ordem === "nome") {
-        resultado.sort((a, b) =>
-            direcao === "desc"
-                ? b.nome.localeCompare(a.nome)
-                : a.nome.localeCompare(b.nome)
-        );
-    }
-
-    // paginação
-    const paginaNum = Number(pagina);
-    const limiteNum = Number(limite);
-    const inicio = (paginaNum - 1) * limiteNum;
-
-    const dados = resultado.slice(inicio, inicio + limiteNum);
-
+    
+    // Buscar produtos desta categoria
+    const produtos = db.prepare(
+        'SELECT * FROM produtos WHERE categoria_id = ?'
+    ).all(id);
+    
+    // Retornar categoria + produtos
     res.json({
-        dados,
-        paginacao: {
-            pagina_atual: paginaNum,
-            itens_por_pagina: limiteNum,
-            total_itens: resultado.length,
-            total_paginas: Math.ceil(resultado.length / limiteNum)
-        }
+        ...categoria,
+        produtos: produtos
     });
 });
 
-// =====================
-// GET POR ID
-// =====================
-app.get('/api/produtos/:id', (req, res) => {
-    const produto = produtos.find(p => p.id === Number(req.params.id));
-
-    if (!produto) {
-        return res.status(404).json({ erro: "Produto não encontrado" });
+// POST /api/categorias - Criar categoria
+app.post('/api/categorias', autenticar, (req, res) => {
+    const { nome, descricao } = req.body;
+    
+    if (!nome) {
+        return res.status(400).json({ erro: 'Nome obrigatório' });
     }
-
-    res.json(produto);
+    
+    const result = db.prepare(
+        'INSERT INTO categorias (nome, descricao) VALUES (?, ?)'
+    ).run(nome, descricao);
+    
+    const categoria = db.prepare(
+        'SELECT * FROM categorias WHERE id = ?'
+    ).get(result.lastInsertRowid);
+    
+    res.status(201).json(categoria);
 });
 
-// =====================
-// POST
-// =====================
-app.post('/api/produtos', verificarToken, (req,res) => {
-    const { nome, preco, categoria, estoque } = req.body;
-
-    if (!nome || !preco || !categoria) {
-        return res.status(400).json({
-            erro: "Campos obrigatórios: nome, preco, categoria"
+// DELETE /api/categorias/:id - Com validação!
+app.delete('/api/categorias/:id', autenticar, (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    // Verificar se tem produtos
+    const temProdutos = db.prepare(
+        'SELECT COUNT(*) as total FROM produtos WHERE categoria_id = ?'
+    ).get(id);
+    
+    if (temProdutos.total > 0) {
+        return res.status(400).json({ 
+            erro: `Não pode deletar. Categoria tem ${temProdutos.total} produtos`
         });
     }
-
-    const novoProduto = {
-        id: proximoId++,
-        nome,
-        preco,
-        categoria,
-        estoque: estoque || 0
-    };
-
-    produtos.push(novoProduto);
-
-    res.status(201).json(novoProduto);
-});
-
-// =====================
-// PUT
-// =====================
-app.put('/api/produtos/:id', verificarToken, (req,res) =>  {
-    const produto = produtos.find(p => p.id === Number(req.params.id));
-
-    if (!produto) {
-        return res.status(404).json({ erro: "Produto não encontrado" });
-    }
-
-    const { nome, preco, categoria, estoque } = req.body;
-
-    produto.nome = nome;
-    produto.preco = preco;
-    produto.categoria = categoria;
-    produto.estoque = estoque;
-
-    res.json(produto);
-});
-
-// =====================
-// DELETE
-// =====================
-app.delete('/api/produtos/:id', verificarToken, (req,res) => {
-    const index = produtos.findIndex(p => p.id === Number(req.params.id));
-
-    if (index === -1) {
-        return res.status(404).json({ erro: "Produto não encontrado" });
-    }
-
-    produtos.splice(index, 1);
-
+    
+    db.prepare('DELETE FROM categorias WHERE id = ?').run(id);
     res.status(204).send();
 });
-
-// =====================
-// SERVIDOR
-// =====================
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-});
+            
