@@ -83,7 +83,7 @@ code .
 
 **DELETE /api/produtos/:id** 🔒
 - Deletar produto
-![Logo](PrintPostman/D.png)
+![Logo](PrintPostman/Delete.png)
 
 ## 🔐 Autenticação
 
